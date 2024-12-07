@@ -7,6 +7,7 @@ const TelemetrySchema = new mongoose.Schema({
 
 const DeviceSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   telemetry: [TelemetrySchema]
 });
 
