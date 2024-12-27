@@ -1,6 +1,6 @@
-const mqtt = require('mqtt');
-require('dotenv').config();
-const Device = require('../models/device');
+const mqtt = require("mqtt");
+require("dotenv").config();
+const Device = require("../models/device");
 
 // Kết nối đến broker
 const client = mqtt.connect(`mqtts://${process.env.MQTT_BROKER}`, {
@@ -9,18 +9,18 @@ const client = mqtt.connect(`mqtts://${process.env.MQTT_BROKER}`, {
   password: process.env.MQTT_PASSWORD,
 });
 
-client.on('connect', () => {
-  console.log('Connected to MQTT Broker');
-  client.subscribe('#', (err) => {
+client.on("connect", () => {
+  console.log("Connected to MQTT Broker");
+  client.subscribe("#", (err) => {
     if (err) {
-      console.error('Failed to subscribe to all topics:', err);
+      console.error("Failed to subscribe to all topics:", err);
     } else {
-      console.log('Subscribed to all topics');
+      console.log("Subscribed to all topics");
     }
   });
 });
 
-client.on('message', async (topic, message) => {
+client.on("message", async (topic, message) => {
   console.log(`Message received on topic ${topic}: ${message.toString()}`);
 
   try {
@@ -31,6 +31,12 @@ client.on('message', async (topic, message) => {
     const device = await Device.findById(_id);
     if (!device) {
       console.error(`Device with ObjectId ${_id} does not exist.`);
+      return;
+    }
+
+    // Kiểm tra người dùng có gửi đúng topic không
+    if (device.topic !== topic) {
+      console.error(`Invalid topic for device: ${_id}`);
       return;
     }
 
@@ -46,12 +52,12 @@ client.on('message', async (topic, message) => {
 
     console.log(`Telemetry data added to device: ${_id}`);
   } catch (error) {
-    console.error('Error processing message:', error);
+    console.error("Error processing message:", error);
   }
 });
 
-client.on('error', (error) => {
-  console.error('MQTT Connection Error:', error);
+client.on("error", (error) => {
+  console.error("MQTT Connection Error:", error);
 });
 
 module.exports = client;
