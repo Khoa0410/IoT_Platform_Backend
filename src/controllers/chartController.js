@@ -10,7 +10,7 @@ exports.createChart = async (req, res) => {
       device,
       field,
       type,
-      user: req.user._id, // Lấy từ middleware authenticate
+      user: req.user._id,
     });
 
     await newChart.save();
@@ -28,5 +28,30 @@ exports.getCharts = async (req, res) => {
     res.status(200).json(charts);
   } catch (error) {
     res.status(500).json({ message: "Error fetching charts", error });
+  }
+};
+
+exports.deleteChart = async (req, res) => {
+  const { chartId } = req.params;
+
+  try {
+    const chart = await Chart.findById(chartId);
+
+    if (!chart) {
+      return res.status(404).json({ message: "Chart not found" });
+    }
+
+    // Kiểm tra nếu chart thuộc về người dùng hiện tại
+    if (chart.user.toString() !== req.user._id.toString()) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this chart" });
+    }
+
+    // Xóa chart
+    await chart.deleteOne();
+    res.status(200).json({ message: "Chart deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting chart", error });
   }
 };

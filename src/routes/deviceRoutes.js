@@ -9,9 +9,9 @@ const {
 
 const router = express.Router();
 
-router.post("/devices", createDevice);
 router.get("/devices", getDevices);
+router.post("/devices", createDevice);
 router.delete("/devices/:id", deleteDevices);
-router.get("/devices/:id/telemetry", authenticate, getTelemetry);
+router.get("/devices/:id/telemetry", getTelemetry);
 
 module.exports = router;
