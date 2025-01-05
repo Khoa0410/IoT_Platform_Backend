@@ -25,6 +25,68 @@ exports.getDevices = async (req, res) => {
   }
 };
 
+exports.getDeviceById = async (req, res) => {
+  const { id } = req.params; // Lấy ID thiết bị từ URL
+
+  try {
+    // Tìm thiết bị thuộc về người dùng hiện tại
+    const device = await Device.findOne({
+      _id: id,
+      user: req.user._id,
+    });
+
+    if (!device) {
+      return res
+        .status(404)
+        .json({ message: "Device not found or not authorized" });
+    }
+
+    res.status(200).json(device);
+  } catch (error) {
+    console.error("Error fetching device by ID:", error);
+    res.status(500).json({ message: "Error fetching device", error });
+  }
+};
+
+exports.updateDevice = async (req, res) => {
+  const { id } = req.params;
+  const { name, topic } = req.body;
+
+  try {
+    const device = await Device.findOne({ _id: id, user: req.user._id });
+    if (!device) {
+      return res
+        .status(404)
+        .json({ message: "Device not found or unauthorized" });
+    }
+
+    // Kiểm tra tên trùng lặp trong cùng user
+    if (name && name !== device.name) {
+      const nameExists = await Device.findOne({
+        name,
+        user: req.user._id,
+        _id: { $ne: id },
+      });
+
+      if (nameExists) {
+        return res.status(400).json({
+          message: "Device name already exists. Please choose another name.",
+        });
+      }
+    }
+
+    if (name) device.name = name;
+    if (topic) device.topic = topic;
+
+    await device.save();
+
+    res.status(200).json({ message: "Device updated successfully", device });
+  } catch (error) {
+    console.error("Error updating device:", error);
+    res.status(500).json({ message: "Error updating device", error });
+  }
+};
+
 exports.deleteDevices = async (req, res) => {
   const { id } = req.params;
   try {

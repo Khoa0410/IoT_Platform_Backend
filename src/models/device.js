@@ -16,4 +16,6 @@ const DeviceSchema = new mongoose.Schema({
   telemetry: [TelemetrySchema],
 });
 
+DeviceSchema.index({ name: 1, user: 1 }, { unique: true });
+
 module.exports = mongoose.model("Device", DeviceSchema);

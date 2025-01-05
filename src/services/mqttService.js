@@ -60,4 +60,28 @@ client.on("error", (error) => {
   console.error("MQTT Connection Error:", error);
 });
 
-module.exports = client;
+const sendCommandToMQTT = (topic, command) => {
+  try {
+    // Kiểm tra nếu không có lệnh
+    if (!command || !topic) {
+      console.error("Topic and Command cannot be empty.");
+      return;
+    }
+
+    // Tạo payload lệnh (bạn có thể tùy chỉnh tùy theo yêu cầu của bạn)
+    const payload = JSON.stringify({ command });
+
+    // Gửi lệnh lên broker MQTT
+    client.publish(topic, payload, { qos: 1 }, (err) => {
+      if (err) {
+        console.error("Failed to send command:", err);
+      } else {
+        console.log(`Command sent to topic ${topic}: ${payload}`);
+      }
+    });
+  } catch (error) {
+    console.error("Error sending command:", error);
+  }
+};
+
+module.exports = { client, sendCommandToMQTT };

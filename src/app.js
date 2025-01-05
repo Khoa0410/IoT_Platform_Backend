@@ -6,6 +6,7 @@ const authRoutes = require("./routes/authRoutes");
 const authenticate = require("./middlewares/authenticate");
 const deviceRoutes = require("./routes/deviceRoutes");
 const chartRoutes = require("./routes/chartRoutes");
+const mqttRoutes = require("./routes/mqttRoutes");
 require("dotenv").config();
 
 const app = express();
@@ -28,7 +29,7 @@ app.use(authenticate);
   }
 })();
 
-// Thêm route quản lý thiết bị
+// RRoute quản lý thiết bị
 app.use("/api", deviceRoutes);
 
 // Route đăng ký đăng nhập
@@ -36,6 +37,8 @@ app.use("/api/auth", authRoutes);
 
 // Route quản lý biểu đồ
 app.use("/api", chartRoutes);
+
+app.use("/api/mqtt", mqttRoutes);
 
 // Khởi chạy server
 app.listen(PORT, () => {
