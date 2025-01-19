@@ -62,14 +62,13 @@ client.on("error", (error) => {
 
 const sendCommandToMQTT = (topic, command) => {
   try {
-    // Kiểm tra nếu không có lệnh
     if (!command || !topic) {
       console.error("Topic and Command cannot be empty.");
       return;
     }
 
-    // Tạo payload lệnh (bạn có thể tùy chỉnh tùy theo yêu cầu của bạn)
-    const payload = JSON.stringify({ command });
+    // Tạo payload
+    const payload = JSON.stringify(command);
 
     // Gửi lệnh lên broker MQTT
     client.publish(topic, payload, { qos: 1 }, (err) => {

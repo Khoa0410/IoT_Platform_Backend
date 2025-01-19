@@ -7,6 +7,8 @@ const authenticate = require("./middlewares/authenticate");
 const deviceRoutes = require("./routes/deviceRoutes");
 const chartRoutes = require("./routes/chartRoutes");
 const mqttRoutes = require("./routes/mqttRoutes");
+const buttonRoutes = require("./routes/buttonRoutes");
+
 require("dotenv").config();
 
 const app = express();
@@ -38,6 +40,10 @@ app.use("/api/auth", authRoutes);
 // Route quản lý biểu đồ
 app.use("/api", chartRoutes);
 
+// Route quản lý nút điều khiển thiết bị
+app.use("/api", buttonRoutes);
+
+// Route quản lý MQTT
 app.use("/api/mqtt", mqttRoutes);
 
 // Khởi chạy server
