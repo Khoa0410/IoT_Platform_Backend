@@ -109,7 +109,7 @@ exports.googleAuth = async (req, res) => {
 
     // Chuyển hướng người dùng về frontend với token trong URL
     // const frontendUrl = `http://localhost:3000/login/?token=${token}`; // URL frontend
-    const frontendUrl = `https://iot-platform-frontend-aikqatlx4-dae-micus-projects.vercel.app/login/?token=${token}`; // URL frontend
+    const frontendUrl = `https://iot-platform-frontend-dae-micus-projects.vercel.app/login/?token=${token}`; // URL frontend
     res.redirect(frontendUrl);
   } catch (error) {
     console.error("Google authentication error:", error);
