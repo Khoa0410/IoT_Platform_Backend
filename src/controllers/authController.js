@@ -54,16 +54,18 @@ exports.googleAuth = async (req, res) => {
     // Gửi yêu cầu POST tới Google để đổi authorization code lấy access_token và id_token
     const response = await axios.post(
       "https://oauth2.googleapis.com/token",
-      null,
+      new URLSearchParams({
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        // redirect_uri: "http://localhost:3001/api/auth/google",
+        redirect_uri:
+          "https://iot-platform-backend.onrender.com/api/auth/google",
+        grant_type: "authorization_code",
+      }).toString(),
       {
-        params: {
-          code: code, // Authorization code mà Google trả về
-          client_id: process.env.GOOGLE_CLIENT_ID,
-          client_secret: process.env.GOOGLE_CLIENT_SECRET,
-          // redirect_uri: "http://localhost:3001/api/auth/google",
-          redirect_uri:
-            "https://iot-platform-backend.onrender.com/api/auth/google",
-          grant_type: "authorization_code", // Grant type cho OAuth 2.0
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
         },
       }
     );
