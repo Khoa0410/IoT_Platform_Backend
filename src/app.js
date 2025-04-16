@@ -8,6 +8,7 @@ const deviceRoutes = require("./routes/deviceRoutes");
 const chartRoutes = require("./routes/chartRoutes");
 const mqttRoutes = require("./routes/mqttRoutes");
 const buttonRoutes = require("./routes/buttonRoutes");
+const alertRoutes = require("./routes/alertRoutes");
 
 require("dotenv").config();
 
@@ -31,17 +32,20 @@ app.use(authenticate);
   }
 })();
 
-// RRoute quản lý thiết bị
-app.use("/api", deviceRoutes);
-
 // Route đăng ký đăng nhập
 app.use("/api/auth", authRoutes);
+
+// Route quản lý thiết bị
+app.use("/api", deviceRoutes);
 
 // Route quản lý biểu đồ
 app.use("/api", chartRoutes);
 
 // Route quản lý nút điều khiển thiết bị
 app.use("/api", buttonRoutes);
+
+// Route quản lý cảnh báo người dùng
+app.use("/api", alertRoutes);
 
 // Route quản lý MQTT
 app.use("/api/mqtt", mqttRoutes);

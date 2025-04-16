@@ -20,6 +20,7 @@ exports.createChart = async (req, res) => {
     });
 
     await newChart.save();
+    await newChart.populate("device", "name");
     res
       .status(201)
       .json({ message: "Chart created successfully", chart: newChart });
@@ -30,7 +31,10 @@ exports.createChart = async (req, res) => {
 
 exports.getCharts = async (req, res) => {
   try {
-    const charts = await Chart.find({ user: req.user._id });
+    const charts = await Chart.find({ user: req.user._id }).populate(
+      "device",
+      "name"
+    );
     res.status(200).json(charts);
   } catch (error) {
     res.status(500).json({ message: "Error fetching charts", error });

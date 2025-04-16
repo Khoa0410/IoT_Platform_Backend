@@ -1,6 +1,7 @@
 const mqtt = require("mqtt");
 require("dotenv").config();
 const Device = require("../models/device");
+const { checkAndTriggerAlerts } = require("../services/alertService");
 
 // Kết nối đến broker
 const client = mqtt.connect(`mqtts://${process.env.MQTT_BROKER}`, {
@@ -49,8 +50,10 @@ client.on("message", async (topic, message) => {
     // Cập nhật telemetry dữ liệu vào thiết bị
     device.telemetry.push(Telemetry);
     await device.save();
-
     console.log(`Telemetry data added to device: ${_id}`);
+
+    // Kiểm tra điều kiện cảnh báo
+    await checkAndTriggerAlerts(device._id, telemetry);
   } catch (error) {
     console.error("Error processing message:", error);
   }
