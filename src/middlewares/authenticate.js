@@ -1,27 +1,61 @@
 const jwt = require("jsonwebtoken");
-const User = require("../models/user"); // Model user
+const User = require("../models/user");
 
 const authenticate = async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1]; // Lấy token từ header
-    if (!token) {
-      return next();
+    const authHeader = req.headers.authorization;
+    const accessToken = authHeader && authHeader.split(" ")[1];
+    const refreshToken = req.cookies?.refreshToken;
+
+    // Nếu có access token, thử xác minh
+    if (accessToken) {
+      try {
+        const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        req.user = user;
+        return next();
+      } catch (err) {
+        if (!refreshToken) {
+          return res.status(401).json({ message: "Access token expired" });
+        }
+        // Access token hết hạn, sẽ xử lý ở dưới
+      }
     }
 
-    // Giải mã token để lấy thông tin user
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Nếu có refresh token, thử tạo lại access token mới
+    if (refreshToken) {
+      try {
+        const decoded = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
+        const user = await User.findById(decoded.id);
+        if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Lấy ObjectId của user từ database
-    const user = await User.findById(decoded.id);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+        // Tạo access token mới
+        const newAccessToken = jwt.sign(
+          { id: user._id, email: user.email },
+          process.env.JWT_SECRET,
+          { expiresIn: "15m" }
+        );
+
+        // Gắn access token mới vào header response
+        res.setHeader("x-access-token", newAccessToken);
+        req.user = user;
+        return next();
+      } catch (err) {
+        return res
+          .status(401)
+          .json({ message: "Refresh token invalid or expired" });
+      }
     }
 
-    // Gắn user vào request để sử dụng ở các bước sau
-    req.user = user;
-    next();
+    // Không có token nào cả
+    return res.status(401).json({ message: "Authentication required" });
   } catch (error) {
-    res.status(401).json({ message: "Invalid or expired token" });
+    console.error("Authentication error:", error);
+    return res
+      .status(500)
+      .json({ message: "Server error during authentication" });
   }
 };
 

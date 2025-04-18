@@ -2,6 +2,10 @@ const User = require("../models/user"); // Model User
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const axios = require("axios");
+const {
+  createAccessToken,
+  createRefreshToken,
+} = require("../utils/tokenUtils");
 
 // Controller xử lý đăng ký
 exports.registerUser = async (req, res) => {
@@ -103,14 +107,19 @@ exports.googleAuth = async (req, res) => {
     }
 
     // Tạo JWT token
-    const token = jwt.sign(
-      { id: user._id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
+    const accessToken = createAccessToken(user);
+    const refreshToken = createRefreshToken(user);
+
+    // Đặt refresh token trong cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true, // Chỉ dùng khi HTTPS
+      sameSite: "Lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
+    });
 
     // Chuyển hướng người dùng về frontend với token trong URL
-    // const frontendUrl = `http://localhost:3000/login/?token=${token}`; // URL frontend
+    // const frontendUrl = `http://localhost:3000/login/?token=${accessToken}`; // URL frontend
     const frontendUrl = `https://iot-platform-frontend-git-main-dae-micus-projects.vercel.app/login/?token=${token}`; // URL frontend
     res.redirect(frontendUrl);
   } catch (error) {
@@ -145,18 +154,54 @@ exports.loginUser = async (req, res) => {
     }
 
     // Tạo JWT token
-    const token = jwt.sign(
-      { id: user._id, email: user.email },
-      process.env.JWT_SECRET, // Key bí mật
-      { expiresIn: "1h" } // Token hết hạn sau 1 giờ
-    );
+    const accessToken = createAccessToken(user);
+    const refreshToken = createRefreshToken(user);
+
+    // Gửi refresh token bằng cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true, // Chỉ dùng khi HTTPS
+      sameSite: "Lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
+    });
 
     res.status(200).json({
       message: "Login successful",
-      token,
+      accessToken,
     });
   } catch (error) {
     console.error("Error logging in user:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Controller xử lý cấp lại access token
+exports.refreshToken = (req, res) => {
+  const token = req.cookies.refreshToken;
+  if (!token) return res.status(401).json({ error: "No refresh token" });
+
+  jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
+    if (err) return res.status(403).json({ error: "Invalid refresh token" });
+
+    const accessToken = createAccessToken({ _id: decoded.id });
+    res.json({ accessToken });
+  });
+};
+
+// Controller xử lý logout
+exports.logoutUser = (req, res) => {
+  try {
+    // Xóa refresh token khỏi cookie
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      sameSite: "Lax",
+      secure: true,
+    });
+
+    // Trả về thành công
+    res.status(200).json({ message: "Logout successful" });
+  } catch (error) {
+    console.error("Error logging out user:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };

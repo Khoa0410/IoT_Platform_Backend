@@ -1,6 +1,8 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
+
 const mqttService = require("./services/mqttService");
 const authRoutes = require("./routes/authRoutes");
 const authenticate = require("./middlewares/authenticate");
@@ -17,8 +19,15 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
-app.use(cors());
-app.use(authenticate);
+app.use(
+  cors({
+    // origin: "http://localhost:3000", // chính xác domain frontend
+    origin:
+      "https://iot-platform-frontend-git-main-dae-micus-projects.vercel.app", // chính xác domain frontend
+    credentials: true, // Cho phép gửi cookie
+  })
+);
+app.use(cookieParser());
 
 (async () => {
   try {
@@ -36,16 +45,16 @@ app.use(authenticate);
 app.use("/api/auth", authRoutes);
 
 // Route quản lý thiết bị
-app.use("/api", deviceRoutes);
+app.use("/api", authenticate, deviceRoutes);
 
 // Route quản lý biểu đồ
-app.use("/api", chartRoutes);
+app.use("/api", authenticate, chartRoutes);
 
 // Route quản lý nút điều khiển thiết bị
-app.use("/api", buttonRoutes);
+app.use("/api", authenticate, buttonRoutes);
 
 // Route quản lý cảnh báo người dùng
-app.use("/api", alertRoutes);
+app.use("/api", authenticate, alertRoutes);
 
 // Route quản lý MQTT
 app.use("/api/mqtt", mqttRoutes);
