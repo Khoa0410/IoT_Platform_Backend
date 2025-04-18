@@ -114,7 +114,7 @@ exports.googleAuth = async (req, res) => {
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: true, // Chỉ dùng khi HTTPS
-      sameSite: "Lax",
+      sameSite: "None",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
     });
 
@@ -161,7 +161,7 @@ exports.loginUser = async (req, res) => {
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: true, // Chỉ dùng khi HTTPS
-      sameSite: "Lax",
+      sameSite: "None",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
     });
 
@@ -194,7 +194,7 @@ exports.logoutUser = (req, res) => {
     // Xóa refresh token khỏi cookie
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      sameSite: "Lax",
+      sameSite: "None",
       secure: true,
     });
 
