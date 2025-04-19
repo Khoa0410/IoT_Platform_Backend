@@ -23,7 +23,7 @@ app.use(
   cors({
     // origin: "http://localhost:3000", // chính xác domain frontend
     origin:
-      "https://iot-platform-frontend-git-main-dae-micus-projects.vercel.app", // chính xác domain frontend
+      "https://daemicu.id.vn", // chính xác domain frontend
     credentials: true, // Cho phép gửi cookie
   })
 );

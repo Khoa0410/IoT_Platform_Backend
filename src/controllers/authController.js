@@ -63,8 +63,7 @@ exports.googleAuth = async (req, res) => {
         client_id: process.env.GOOGLE_CLIENT_ID,
         client_secret: process.env.GOOGLE_CLIENT_SECRET,
         // redirect_uri: "http://localhost:3001/api/auth/google",
-        redirect_uri:
-          "https://iot-platform-backend.onrender.com/api/auth/google",
+        redirect_uri: "https://daemicu.id.vn/api/auth/google",
         grant_type: "authorization_code",
       }).toString(),
       {
@@ -120,7 +119,7 @@ exports.googleAuth = async (req, res) => {
 
     // Chuyển hướng người dùng về frontend với token trong URL
     // const frontendUrl = `http://localhost:3000/login/?token=${accessToken}`; // URL frontend
-    const frontendUrl = `https://iot-platform-frontend-git-main-dae-micus-projects.vercel.app/login/?token=${token}`; // URL frontend
+    const frontendUrl = `https://daemicu.id.vn/login/?token=${token}`; // URL frontend
     res.redirect(frontendUrl);
   } catch (error) {
     console.error("Google authentication error:", error);
