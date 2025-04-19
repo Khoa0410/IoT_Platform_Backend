@@ -119,7 +119,7 @@ exports.googleAuth = async (req, res) => {
 
     // Chuyển hướng người dùng về frontend với token trong URL
     // const frontendUrl = `http://localhost:3000/login/?token=${accessToken}`; // URL frontend
-    const frontendUrl = `https://daemicu.id.vn/login/?token=${token}`; // URL frontend
+    const frontendUrl = `https://daemicu.id.vn/login/?token=${accessToken}`; // URL frontend
     res.redirect(frontendUrl);
   } catch (error) {
     console.error("Google authentication error:", error);
