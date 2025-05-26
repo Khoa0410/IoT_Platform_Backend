@@ -26,7 +26,7 @@ client.on("message", async (topic, message) => {
 
   try {
     const payload = JSON.parse(message.toString());
-    const { _id, telemetry } = payload;
+    const { _id, telemetry, timestamp } = payload;
 
     // Kiểm tra xem thiết bị có tồn tại không
     const device = await Device.findById(_id);
@@ -41,9 +41,31 @@ client.on("message", async (topic, message) => {
       return;
     }
 
+    // Xử lý timestamp
+    let telemetryTimestamp;
+    if (timestamp) {
+      // Parse timestamp (GMT+7) và chuyển về GMT0
+      try {
+        const date = new Date(`${timestamp} GMT+0700`);
+        if (isNaN(date.getTime())) {
+          throw new Error("Invalid timestamp format");
+        }
+        // Trừ 7 giờ để chuyển về GMT0
+        date.setHours(date.getHours() - 7);
+        telemetryTimestamp = date;
+      } catch (error) {
+        console.error(`Invalid timestamp for device ${_id}: ${timestamp}`);
+        // Fallback: dùng thời gian hiện tại nếu timestamp lỗi
+        telemetryTimestamp = new Date();
+      }
+    } else {
+      // Không có timestamp: dùng thời gian hiện tại
+      telemetryTimestamp = new Date();
+    }
+
     // Taọ đối tượng telemetry
     const Telemetry = {
-      timestamp: new Date(), // Tự động cập nhật timestamp
+      timestamp: telemetryTimestamp,
       data: telemetry,
     };
 

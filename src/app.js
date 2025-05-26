@@ -21,9 +21,8 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(
   cors({
-    // origin: "http://localhost:3000", // chính xác domain frontend
-    origin:
-      "https://daemicu.id.vn", // chính xác domain frontend
+    // origin: "http://localhost:3000", // domain frontend
+    origin: "https://daemicu.id.vn", // domain frontend
     credentials: true, // Cho phép gửi cookie
   })
 );
