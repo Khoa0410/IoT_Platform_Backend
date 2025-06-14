@@ -27,6 +27,7 @@ client.on("message", async (topic, message) => {
   try {
     const payload = JSON.parse(message.toString());
     const { _id, telemetry, timestamp } = payload;
+    if (timestamp) console.log(`Timestamp: ${timestamp}`);
 
     // Kiểm tra xem thiết bị có tồn tại không
     const device = await Device.findById(_id);
@@ -41,13 +42,24 @@ client.on("message", async (topic, message) => {
       return;
     }
 
-    // Xử lý timestamp
+    // Xử lý timestamp và chuyển về GMT+7 nếu có
     let telemetryTimestamp;
     if (timestamp) {
-      telemetryTimestamp = timestamp;
+      const date = new Date(timestamp);
+      // Kiểm tra xem timestamp có hợp lệ không
+      if (isNaN(date.getTime())) {
+        console.error(`Invalid timestamp for device: ${_id}`);
+        telemetryTimestamp = new Date(); // Nếu timestamp không hợp lệ, dùng thời gian hiện tại
+      } else {
+        // Chuyển về GMT+7: cộng thêm 7 giờ (7 * 60 * 60 * 1000 milliseconds)
+        const gmtPlus7Offset = 7 * 60 * 60 * 1000;
+        const gmtPlus7Time = new Date(date.getTime() + gmtPlus7Offset);
+        telemetryTimestamp = gmtPlus7Time;
+      }
     } else {
       telemetryTimestamp = new Date(); // Không có timestamp: dùng thời gian hiện tại
     }
+    console.log(`Telemetry timestamp: ${telemetryTimestamp}`);
 
     // Taọ đối tượng telemetry
     const Telemetry = {
@@ -55,10 +67,24 @@ client.on("message", async (topic, message) => {
       data: telemetry,
     };
 
-    // Cập nhật telemetry dữ liệu vào thiết bị
-    device.telemetry.push(Telemetry);
-    await device.save();
-    console.log(`Telemetry data added to device: ${_id}`);
+    // Thêm telemetry và sắp xếp theo timestamp
+    await Device.updateOne(
+      { _id },
+      {
+        $push: {
+          telemetry: {
+            $each: [Telemetry],
+            $sort: { timestamp: 1 }, // Sắp xếp tăng dần theo timestamp
+          },
+        },
+      }
+    );
+
+    console.log(
+      `Telemetry data added to device: ${_id}`,
+      `Telmetry:`,
+      Telemetry
+    );
 
     // Kiểm tra điều kiện cảnh báo
     await checkAndTriggerAlerts(device._id, telemetry);

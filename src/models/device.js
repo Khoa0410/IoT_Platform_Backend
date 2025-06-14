@@ -1,12 +1,9 @@
 const mongoose = require("mongoose");
 
-const TelemetrySchema = new mongoose.Schema(
-  {
-    timestamp: { type: Date, required: true },
-    data: { type: mongoose.Schema.Types.Mixed, required: true },
-  },
-  { _id: false }
-);
+const TelemetrySchema = new mongoose.Schema({
+  timestamp: { type: Date, required: true },
+  data: { type: mongoose.Schema.Types.Mixed, required: true },
+});
 
 const DeviceSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -15,6 +12,8 @@ const DeviceSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   telemetry: [TelemetrySchema],
 });
+
+DeviceSchema.index({ "telemetry.timestamp": 1 });
 
 DeviceSchema.index({ name: 1, user: 1 }, { unique: true });
 
