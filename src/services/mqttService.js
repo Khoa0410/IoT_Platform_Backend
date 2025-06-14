@@ -44,23 +44,9 @@ client.on("message", async (topic, message) => {
     // Xử lý timestamp
     let telemetryTimestamp;
     if (timestamp) {
-      // Parse timestamp (GMT+7) và chuyển về GMT0
-      try {
-        const date = new Date(`${timestamp} GMT+0700`);
-        if (isNaN(date.getTime())) {
-          throw new Error("Invalid timestamp format");
-        }
-        // Trừ 7 giờ để chuyển về GMT0
-        date.setHours(date.getHours() - 7);
-        telemetryTimestamp = date;
-      } catch (error) {
-        console.error(`Invalid timestamp for device ${_id}: ${timestamp}`);
-        // Fallback: dùng thời gian hiện tại nếu timestamp lỗi
-        telemetryTimestamp = new Date();
-      }
+      telemetryTimestamp = timestamp;
     } else {
-      // Không có timestamp: dùng thời gian hiện tại
-      telemetryTimestamp = new Date();
+      telemetryTimestamp = new Date(); // Không có timestamp: dùng thời gian hiện tại
     }
 
     // Taọ đối tượng telemetry

@@ -22,7 +22,9 @@ const sendAlertEmail = async (to, alertName, deviceName, data) => {
     <p>Thiết bị: <strong>${deviceName}</strong></p>
     <p>Dữ liệu cảm biến vượt ngưỡng:</p>
     <pre>${JSON.stringify(data, null, 2)}</pre>
-    <p>Thời gian: ${new Date().toLocaleString()}</p>
+    <p>Thời gian: ${new Date().toLocaleString("vi-VN", {
+      timeZone: "Asia/Ho_Chi_Minh",
+    })}</p>
   `;
 
   const mailOptions = {

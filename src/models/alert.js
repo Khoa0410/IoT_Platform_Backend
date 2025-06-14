@@ -35,4 +35,6 @@ const AlertSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+AlertSchema.index({ name: 1, user: 1 }, { unique: true });
+
 module.exports = mongoose.model("Alert", AlertSchema);

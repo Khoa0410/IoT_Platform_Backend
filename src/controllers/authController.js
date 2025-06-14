@@ -76,7 +76,7 @@ exports.googleAuth = async (req, res) => {
     // Lấy access_token và id_token từ response
     const { access_token, id_token } = response.data;
 
-    // Dùng id_token để lấy thông tin người dùng từ Google
+    // Dùng access_token để lấy thông tin người dùng từ Google
     const userInfoResponse = await axios.get(
       "https://www.googleapis.com/oauth2/v3/userinfo",
       {
@@ -160,7 +160,7 @@ exports.loginUser = async (req, res) => {
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: true, // Chỉ dùng khi HTTPS
-      sameSite: "None",
+      sameSite: "Strict",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
     });
 
