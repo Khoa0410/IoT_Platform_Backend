@@ -11,18 +11,13 @@ const chartRoutes = require("./routes/chartRoutes");
 const mqttRoutes = require("./routes/mqttRoutes");
 const buttonRoutes = require("./routes/buttonRoutes");
 const alertRoutes = require("./routes/alertRoutes");
+const { baseUrl } = require("./config");
 
 require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// const baseUrl = "http://localhost:3000";
-// const redirectUrl = "http://localhost:3001";
-const baseUrl = "https://daemicu.id.vn";
-const redirectUrl = "https://daemicu.id.vn";
-module.exports.baseUrl = baseUrl;
-module.exports.redirectUrl = redirectUrl;
 
 // Middleware
 app.use(express.json());

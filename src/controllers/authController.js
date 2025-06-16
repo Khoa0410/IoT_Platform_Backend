@@ -6,7 +6,7 @@ const {
   createAccessToken,
   createRefreshToken,
 } = require("../utils/tokenUtils");
-const { baseUrl, redirectUrl } = require("../app");
+const { baseUrl, redirectUrl } = require("../config");
 
 // Controller xử lý đăng ký
 exports.registerUser = async (req, res) => {
@@ -50,6 +50,7 @@ exports.registerUser = async (req, res) => {
 // Controller xử lý đăng nhập qua Google OAuth
 exports.googleAuth = async (req, res) => {
   const { code } = req.query;
+  console.log(baseUrl, redirectUrl);
 
   if (!code) {
     return res.status(400).json({ error: "Authorization code is missing" });
