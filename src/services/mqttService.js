@@ -42,7 +42,7 @@ client.on("message", async (topic, message) => {
       return;
     }
 
-    // Xử lý timestamp và chuyển về GMT+7 nếu có
+    // Xử lý timestamp
     let telemetryTimestamp;
     if (timestamp) {
       const date = new Date(timestamp);
@@ -51,10 +51,7 @@ client.on("message", async (topic, message) => {
         console.error(`Invalid timestamp for device: ${_id}`);
         telemetryTimestamp = new Date(); // Nếu timestamp không hợp lệ, dùng thời gian hiện tại
       } else {
-        // Chuyển về GMT+7: cộng thêm 7 giờ (7 * 60 * 60 * 1000 milliseconds)
-        const gmtPlus7Offset = 7 * 60 * 60 * 1000;
-        const gmtPlus7Time = new Date(date.getTime() + gmtPlus7Offset);
-        telemetryTimestamp = gmtPlus7Time;
+        telemetryTimestamp = timestamp;
       }
     } else {
       telemetryTimestamp = new Date(); // Không có timestamp: dùng thời gian hiện tại
@@ -68,17 +65,7 @@ client.on("message", async (topic, message) => {
     };
 
     // Thêm telemetry và sắp xếp theo timestamp
-    await Device.updateOne(
-      { _id },
-      {
-        $push: {
-          telemetry: {
-            $each: [Telemetry],
-            $sort: { timestamp: 1 }, // Sắp xếp tăng dần theo timestamp
-          },
-        },
-      }
-    );
+    await Device.updateOne({ _id }, { $push: { telemetry: Telemetry } });
 
     console.log(
       `Telemetry data added to device: ${_id}`,
