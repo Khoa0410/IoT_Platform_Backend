@@ -1,4 +1,8 @@
+const mongoose = require('mongoose');
 const Device = require("../models/device");
+const Chart = require("../models/chart");
+const Button = require("../models/button");
+const Alert = require("../models/alert");
 
 exports.createDevice = async (req, res) => {
   const { name, topic, telemetry } = req.body;
@@ -89,7 +93,11 @@ exports.updateDevice = async (req, res) => {
 
 exports.deleteDevices = async (req, res) => {
   const { id } = req.params;
+  const session = await mongoose.startSession();
+
   try {
+    session.startTransaction();
+
     // Tìm và xóa device thuộc về user đang đăng nhập
     const deletedDevice = await Device.findOneAndDelete({
       _id: id,
@@ -102,10 +110,20 @@ exports.deleteDevices = async (req, res) => {
         .json({ message: "Device not found or not authorized to delete" });
     }
 
+    // Xóa các tài nguyên liên quan: charts, buttons, alerts
+    await Chart.deleteMany({ device: id }, { session });
+    await Button.deleteMany({ device: id }, { session });
+    await Alert.deleteMany({ device: id }, { session });
+
+    await session.commitTransaction();
+    session.endSession();
+
     res
       .status(200)
       .json({ message: "Device deleted successfully", deletedDevice });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     res.status(500).json({ message: "Error deleting device", error });
   }
 };

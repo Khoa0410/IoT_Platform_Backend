@@ -17,12 +17,18 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// const baseUrl = "http://localhost:3000";
+// const redirectUrl = "http://localhost:3001";
+const baseUrl = "https://daemicu.id.vn";
+const redirectUrl = "https://daemicu.id.vn";
+module.exports.baseUrl = baseUrl;
+module.exports.redirectUrl = redirectUrl;
+
 // Middleware
 app.use(express.json());
 app.use(
   cors({
-    // origin: "http://localhost:3000", // domain frontend
-    origin: "https://daemicu.id.vn", // domain frontend
+    origin: baseUrl, // domain frontend
     credentials: true, // Cho phép gửi cookie
   })
 );

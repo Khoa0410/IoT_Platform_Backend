@@ -6,6 +6,7 @@ const {
   createAccessToken,
   createRefreshToken,
 } = require("../utils/tokenUtils");
+const { baseUrl, redirectUrl } = require("../app");
 
 // Controller xử lý đăng ký
 exports.registerUser = async (req, res) => {
@@ -62,8 +63,7 @@ exports.googleAuth = async (req, res) => {
         code,
         client_id: process.env.GOOGLE_CLIENT_ID,
         client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        // redirect_uri: "http://localhost:3001/api/auth/google",
-        redirect_uri: "https://daemicu.id.vn/api/auth/google",
+        redirect_uri: `${redirectUrl}/api/auth/google`,
         grant_type: "authorization_code",
       }).toString(),
       {
@@ -118,11 +118,10 @@ exports.googleAuth = async (req, res) => {
     });
 
     // Chuyển hướng người dùng về frontend với token trong URL
-    // const frontendUrl = `http://localhost:3000/login/?token=${accessToken}`; // URL frontend
-    const frontendUrl = `https://daemicu.id.vn/login/?token=${accessToken}`; // URL frontend
+    const frontendUrl = `${baseUrl}/login/?token=${accessToken}`; // URL frontend
     res.redirect(frontendUrl);
   } catch (error) {
-    console.error("Google authentication error:", error);
+    console.error("OAuth error:", error.response?.data || error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 };
