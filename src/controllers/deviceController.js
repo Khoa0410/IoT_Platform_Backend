@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const Device = require("../models/device");
 const Chart = require("../models/chart");
 const Button = require("../models/button");
@@ -171,5 +171,43 @@ exports.getTelemetry = async (req, res) => {
     res.status(200).json(telemetry);
   } catch (error) {
     res.status(500).json({ message: "Error fetching telemetry data", error });
+  }
+};
+
+exports.getTelemetryField = async (req, res) => {
+  const { id } = req.params; // Lấy ID thiết bị từ URL
+
+  try {
+    // Tìm thiết bị thuộc về người dùng đang đăng nhập
+    const device = await Device.findOne({
+      _id: id,
+      user: req.user._id,
+    })
+      .select("telemetry")
+      .slice("telemetry", -1);
+
+    if (!device) {
+      return res
+        .status(404)
+        .json({ message: "Device not found or not authorized" });
+    }
+    
+    if (!device.telemetry || device.telemetry.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No telemetry data found for this device" });
+    }
+
+    // Trích xuất các trường từ telemetry.data của bản ghi mới nhất
+    const telemetry = device.telemetry[0]; // Lấy bản ghi đầu tiên (mới nhất)
+    const fields =
+      telemetry.data && typeof telemetry.data === "object"
+        ? Object.keys(telemetry.data)
+        : [];
+
+    res.json({ fields });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };

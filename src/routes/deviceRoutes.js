@@ -7,6 +7,7 @@ const {
   updateDevice,
   deleteDevices,
   getTelemetry,
+  getTelemetryField,
 } = require("../controllers/deviceController");
 
 const router = express.Router();
@@ -17,5 +18,6 @@ router.post("/devices", createDevice);
 router.put("/devices/:id", updateDevice);
 router.delete("/devices/:id", deleteDevices);
 router.get("/devices/:id/telemetry", getTelemetry);
+router.get("/devices/:id/telemetry-field", getTelemetryField);
 
 module.exports = router;

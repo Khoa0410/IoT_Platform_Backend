@@ -49,7 +49,7 @@ client.on("message", async (topic, message) => {
       // Kiểm tra xem timestamp có hợp lệ không
       if (isNaN(date.getTime())) {
         console.error(`Invalid timestamp for device: ${_id}`);
-        telemetryTimestamp = new Date(); // Nếu timestamp không hợp lệ, dùng thời gian hiện tại
+        return;
       } else {
         telemetryTimestamp = timestamp;
       }
