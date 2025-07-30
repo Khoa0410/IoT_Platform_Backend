@@ -16,7 +16,7 @@ exports.registerUser = async (req, res) => {
     // Kiểm tra nếu email đã tồn tại
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ error: "Email đã được sử dụng." });
+      return res.status(400).json({ error: "Email is already in use." });
     }
 
     // Hash mật khẩu
@@ -34,7 +34,7 @@ exports.registerUser = async (req, res) => {
 
     // Trả về thông tin user (không bao gồm password)
     res.status(201).json({
-      message: "Đăng ký thành công!",
+      message: "User registered successfully",
       user: {
         id: newUser._id,
         email: newUser.email,
@@ -43,7 +43,9 @@ exports.registerUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Error registering user:", error);
-    res.status(500).json({ error: "Đã xảy ra lỗi, vui lòng thử lại sau." });
+    res
+      .status(500)
+      .json({ error: "An error occurred, please try again later." });
   }
 };
 
@@ -142,7 +144,7 @@ exports.loginUser = async (req, res) => {
     if (!user.password) {
       return res.status(400).json({
         error:
-          "Tài khoản này được tạo qua Google. Vui lòng đăng nhập bằng Google.",
+          "This account was created through Google. Please sign in with Google.",
       });
     }
 
@@ -170,7 +172,9 @@ exports.loginUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Error logging in user:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res
+      .status(500)
+      .json({ error: "An error occurred, please try again later." });
   }
 };
 

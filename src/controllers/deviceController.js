@@ -25,7 +25,9 @@ exports.getDevices = async (req, res) => {
     const devices = await Device.find({ user: req.user._id });
     res.status(200).json(devices);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching devices", error });
+    res
+      .status(500)
+      .json({ message: "An error occurred while fetching devices", error });
   }
 };
 
@@ -191,7 +193,7 @@ exports.getTelemetryField = async (req, res) => {
         .status(404)
         .json({ message: "Device not found or not authorized" });
     }
-    
+
     if (!device.telemetry || device.telemetry.length === 0) {
       return res
         .status(404)

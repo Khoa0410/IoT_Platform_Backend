@@ -12,18 +12,28 @@ const mqttRoutes = require("./routes/mqttRoutes");
 const buttonRoutes = require("./routes/buttonRoutes");
 const alertRoutes = require("./routes/alertRoutes");
 const { baseUrl } = require("./config");
+const swaggerRoutes = require("./routes/swaggerRoutes");
 
 require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
+const allowedOrigins = [
+  baseUrl, // frontend dev
+  "http://127.0.0.1:5500", // swagger UI local
+];
 
 // Middleware
 app.use(express.json());
 app.use(
   cors({
-    origin: baseUrl, // domain frontend
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Not allowed by CORS: ${origin}`));
+      }
+    },
     credentials: true, // Cho phép gửi cookie
   })
 );
@@ -40,6 +50,9 @@ app.use(cookieParser());
     console.error("Error connecting to MongoDB:", error);
   }
 })();
+
+// Route Swagger
+app.use("/api", swaggerRoutes);
 
 // Route đăng ký đăng nhập
 app.use("/api/auth", authRoutes);

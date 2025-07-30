@@ -1,0 +1,1095 @@
+openapi: 3.0.0
+info:
+  title: Daemicu API
+  version: 1.0.0
+  description: |
+    Tài liệu API cho hệ thống IoT Platform, bao gồm:
+      1. Auth - Đăng nhập, đăng ký, Google OAuth
+      2. Devices - Quản lý thiết bị và dữ liệu telemetry
+      3. Charts - Tạo và quản lý biểu đồ dữ liệu thiết bị
+      4. Buttons - Điều khiển thiết bị thông qua button
+      5. Alerts - Cảnh báo người dùng dựa trên điều kiện
+      6. MQTT - Gửi lệnh điều khiển qua MQTT broker
+
+servers:
+  - url: https://daemicu.id.vn
+    description: Production server
+  - url: http://localhost:3001
+    description: Local development server
+
+tags:
+  - name: Auth
+    description: API xác thực người dùng (đăng nhập, đăng ký, Google OAuth)
+  - name: Devices
+    description: API quản lý thiết bị và dữ liệu telemetry
+  - name: Charts
+    description: API tạo và quản lý biểu đồ dữ liệu cảm biến
+  - name: Buttons
+    description: API điều khiển thiết bị thông qua button
+  - name: Alerts
+    description: API thông báo cảnh báo dựa trên điều kiện
+  - name: MQTT
+    description: API gửi lệnh điều khiển qua MQTT broker
+
+paths:
+  /api/auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Đăng ký người dùng mới
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+              properties:
+                name:
+                  type: string
+                  example: "Nguyen Van A"
+                email:
+                  type: string
+                  format: email
+                  example: "nguyenvana@example.com"
+                password:
+                  type: string
+                  format: password
+                  example: "password123"
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User registered successfully"
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "12345"
+                      name:
+                        type: string
+                        example: "Nguyen Van A"
+                      email:
+                        type: string
+                        example: "nguyenvana@example.com"
+        "400":
+          description: Email is already in use
+        "500":
+          description: An error occurred, please try again later
+
+  /api/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Đăng nhập
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "nguyenvana@example.com"
+                password:
+                  type: string
+                  format: password
+                  example: "password123"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Login successful"
+                  accessToken:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "401":
+          description: Invalid email or password
+        "400":
+          description: This account was created through Google. Please sign in with Google.
+        "500":
+          description: An error occurred, please try again later
+
+  /api/auth/google:
+    get:
+      tags:
+        - Auth
+      summary: Đăng nhập qua Google OAuth
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Authorization code từ Google OAuth
+      responses:
+        "302":
+          description: Redirect to frontend with token
+        "400":
+          description: Authorization code is missing
+        "500":
+          description: Internal server error
+
+  /api/auth/refresh-token:
+    post:
+      tags:
+        - Auth
+      summary: Làm mới access token
+      description: Sử dụng refresh token từ cookie để lấy access token mới
+      responses:
+        "200":
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "401":
+          description: No refresh token
+        "403":
+          description: Invalid refresh token
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Đăng xuất
+      responses:
+        "200":
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Logout successful"
+        "500":
+          description: Internal server error
+
+  # Devices API
+  /api/devices:
+    get:
+      tags:
+        - Devices
+      summary: Lấy danh sách thiết bị của người dùng
+      description: |
+        Trả về danh sách thiết bị thuộc về người dùng đã đăng nhập. 
+        Yêu cầu access token trong header.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Danh sách thiết bị
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                      example: "675ced69ad0ac3c9cb3cd7cg"
+                    name:
+                      type: string
+                      example: "Air Sensor"
+                    topic:
+                      type: string
+                      example: "air_sensor/telemetry"
+                    user:
+                      type: string
+                      example: "6754c2137fac0fdda5b44900"
+                    telemetry:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          _id:
+                            type: string
+                            example: "68889de7bd62907a9d0e8805"
+                          timestamp:
+                            type: string
+                            format: date-time
+                            example: "2024-12-21T08:06:40.220Z"
+                          data:
+                            type: object
+                            additionalProperties: true
+                            example:
+                              co: 890.1234
+                              pm25: 150.5678
+                              temp: "30"
+                    createdAt:
+                      type: string
+                      format: date-time
+                      example: "2024-12-14T02:28:57.711Z"
+                    __v:
+                      type: integer
+                      example: 0
+        "401":
+          description: Unauthorized - Access token is missing or invalid
+        "500":
+          description: An error occurred while fetching devices
+
+    post:
+      tags:
+        - Devices
+      summary: Tạo thiết bị mới
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - topic
+                - telemetry
+              properties:
+                name:
+                  type: string
+                  example: "Temperature Sensor"
+                topic:
+                  type: string
+                  example: "temp_sensor/telemetry"
+                telemetry:
+                  type: object
+                  additionalProperties: true
+                  example:
+                    temperature: 25.5
+                    humidity: 60.2
+      responses:
+        "201":
+          description: Device created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                    example: "675ced69ad0ac3c9cb3cd7cg"
+                  name:
+                    type: string
+                    example: "Temperature Sensor"
+                  topic:
+                    type: string
+                    example: "temp_sensor/telemetry"
+                  user:
+                    type: string
+                    example: "6754c2137fac0fdda5b44900"
+                  telemetry:
+                    type: object
+                  createdAt:
+                    type: string
+                    format: date-time
+        "500":
+          description: Device's name already exist
+
+  /api/devices/{deviceId}:
+    get:
+      tags:
+        - Devices
+      summary: Lấy thông tin thiết bị theo ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "675ced69ad0ac3c9cb3cd7cg"
+      responses:
+        "200":
+          description: Thông tin thiết bị
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                    example: "675ced69ad0ac3c9cb3cd7cg"
+                  name:
+                    type: string
+                    example: "Air Sensor"
+                  topic:
+                    type: string
+                    example: "air_sensor/telemetry"
+                  user:
+                    type: string
+                    example: "6754c2137fac0fdda5b44900"
+                  telemetry:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        timestamp:
+                          type: string
+                          format: date-time
+                        data:
+                          type: object
+                          additionalProperties: true
+                  createdAt:
+                    type: string
+                    format: date-time
+        "404":
+          description: Device not found or not authorized
+        "401":
+          description: Unauthorized
+        "500":
+          description: Error fetching device
+
+    put:
+      tags:
+        - Devices
+      summary: Cập nhật thông tin thiết bị
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Air Sensor Updated"
+                topic:
+                  type: string
+                  example: "air_sensor/telemetry_new"
+      responses:
+        "200":
+          description: Device updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Device updated successfully"
+                  device:
+                    type: object
+        "400":
+          description: Device name already exists
+        "404":
+          description: Device not found or unauthorized
+        "500":
+          description: Error updating device
+
+    delete:
+      tags:
+        - Devices
+      summary: Xóa thiết bị
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Device deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Device deleted successfully"
+                  deletedDevice:
+                    type: object
+        "404":
+          description: Device not found or not authorized to delete
+        "500":
+          description: Error deleting device
+
+  /api/devices/{deviceId}/telemetry:
+    get:
+      tags:
+        - Devices
+      summary: Lấy dữ liệu telemetry của thiết bị
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: field
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Lọc theo trường dữ liệu cụ thể
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Ngày bắt đầu lọc
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Ngày kết thúc lọc
+      responses:
+        "200":
+          description: Dữ liệu telemetry
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    timestamp:
+                      type: string
+                      format: date-time
+                    value:
+                      type: number
+        "404":
+          description: Device not found or not authorized
+        "500":
+          description: Error fetching telemetry data
+
+  /api/devices/{deviceId}/telemetry-field:
+    get:
+      tags:
+        - Devices
+      summary: Lấy danh sách các trường dữ liệu telemetry
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Danh sách các trường dữ liệu
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fields:
+                    type: array
+                    items:
+                      type: string
+                    example: ["temperature", "humidity", "co", "pm25"]
+        "404":
+          description: Device not found or no telemetry data
+        "500":
+          description: Server error
+
+  # Charts API
+  /api/charts:
+    get:
+      tags:
+        - Charts
+      summary: Lấy danh sách biểu đồ của người dùng
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Danh sách biểu đồ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                      example: "675ced69ad0ac3c9cb3cd7ch"
+                    name:
+                      type: string
+                      example: "Temperature Chart"
+                    device:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        name:
+                          type: string
+                          example: "Air Sensor"
+                    field:
+                      type: string
+                      example: "temperature"
+                    type:
+                      type: string
+                      enum: ["line", "bar"]
+                      example: "line"
+                    user:
+                      type: string
+                      example: "6754c2137fac0fdda5b44900"
+        "500":
+          description: Error fetching charts
+
+    post:
+      tags:
+        - Charts
+      summary: Tạo biểu đồ mới
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - device
+                - field
+                - type
+              properties:
+                name:
+                  type: string
+                  example: "Temperature Chart"
+                device:
+                  type: string
+                  example: "675ced69ad0ac3c9cb3cd7cg"
+                  description: ID của thiết bị
+                field:
+                  type: string
+                  example: "temperature"
+                  description: Trường dữ liệu từ telemetry
+                type:
+                  type: string
+                  enum: ["line", "bar"]
+                  example: "line"
+      responses:
+        "201":
+          description: Chart created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Chart created successfully"
+                  chart:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                      name:
+                        type: string
+                      device:
+                        type: object
+                        properties:
+                          _id:
+                            type: string
+                          name:
+                            type: string
+                      field:
+                        type: string
+                      type:
+                        type: string
+                      user:
+                        type: string
+        "400":
+          description: Chart name already exists
+        "500":
+          description: Error creating chart
+
+  /api/charts/{chartId}:
+    delete:
+      tags:
+        - Charts
+      summary: Xóa biểu đồ
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chartId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "675ced69ad0ac3c9cb3cd7ch"
+      responses:
+        "200":
+          description: Chart deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Chart deleted successfully"
+        "404":
+          description: Chart not found
+        "500":
+          description: Error deleting chart
+
+  # Buttons API
+  /api/buttons:
+    get:
+      tags:
+        - Buttons
+      summary: Lấy danh sách button của người dùng
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Danh sách button
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                      example: "675ced69ad0ac3c9cb3cd7ci"
+                    name:
+                      type: string
+                      example: "LED Control"
+                    device:
+                      type: string
+                      example: "675ced69ad0ac3c9cb3cd7cg"
+                    state:
+                      type: boolean
+                      example: false
+                    topic:
+                      type: string
+                      example: "device/control"
+                    user:
+                      type: string
+                      example: "6754c2137fac0fdda5b44900"
+        "500":
+          description: Failed to fetch buttons
+
+    post:
+      tags:
+        - Buttons
+      summary: Tạo button mới
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - device
+                - topic
+              properties:
+                name:
+                  type: string
+                  example: "LED Control"
+                device:
+                  type: string
+                  example: "675ced69ad0ac3c9cb3cd7cg"
+                  description: ID của thiết bị
+                topic:
+                  type: string
+                  example: "device/control"
+                  description: MQTT topic để gửi lệnh điều khiển
+      responses:
+        "201":
+          description: Button created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                  name:
+                    type: string
+                  device:
+                    type: string
+                  state:
+                    type: boolean
+                    default: false
+                  topic:
+                    type: string
+                  user:
+                    type: string
+        "400":
+          description: Button name already exists or missing required fields
+        "500":
+          description: Failed to create button
+
+  /api/buttons/{buttonId}:
+    put:
+      tags:
+        - Buttons
+      summary: Cập nhật trạng thái button (bật/tắt thiết bị)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: buttonId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "675ced69ad0ac3c9cb3cd7ci"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - state
+              properties:
+                state:
+                  type: boolean
+                  example: true
+                  description: Trạng thái mới của button (true = bật, false = tắt)
+      responses:
+        "200":
+          description: Button state updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                  name:
+                    type: string
+                  device:
+                    type: string
+                  state:
+                    type: boolean
+                  topic:
+                    type: string
+                  user:
+                    type: string
+        "404":
+          description: Button not found
+        "500":
+          description: Failed to update button state
+
+    delete:
+      tags:
+        - Buttons
+      summary: Xóa button
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: buttonId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "675ced69ad0ac3c9cb3cd7ci"
+      responses:
+        "200":
+          description: Button deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Button deleted successfully"
+        "404":
+          description: Button not found
+        "403":
+          description: Not authorized to delete this button
+        "500":
+          description: Error deleting button
+
+  # Alerts API
+  /api/alerts:
+    get:
+      tags:
+        - Alerts
+      summary: Lấy danh sách cảnh báo của người dùng
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Danh sách cảnh báo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                      example: "675ced69ad0ac3c9cb3cd7cj"
+                    name:
+                      type: string
+                      example: "High Temperature Alert"
+                    device:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        name:
+                          type: string
+                          example: "Air Sensor"
+                    user:
+                      type: string
+                      example: "6754c2137fac0fdda5b44900"
+                    conditions:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          sensorField:
+                            type: string
+                            example: "temperature"
+                          operator:
+                            type: string
+                            enum: [">", ">=", "<", "<=", "==", "!="]
+                            example: ">"
+                          value:
+                            type: number
+                            example: 30
+                    logic:
+                      type: string
+                      enum: ["OR"]
+                      example: "OR"
+                    emailNotification:
+                      type: boolean
+                      example: true
+                    isActive:
+                      type: boolean
+                      example: true
+                    createdAt:
+                      type: string
+                      format: date-time
+        "500":
+          description: Failed to fetch alerts
+
+    post:
+      tags:
+        - Alerts
+      summary: Tạo cảnh báo mới
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - device
+                - conditions
+              properties:
+                name:
+                  type: string
+                  example: "High Temperature Alert"
+                device:
+                  type: string
+                  example: "675ced69ad0ac3c9cb3cd7cg"
+                  description: ID của thiết bị
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - sensorField
+                      - operator
+                      - value
+                    properties:
+                      sensorField:
+                        type: string
+                        example: "temperature"
+                        description: Trường dữ liệu từ telemetry
+                      operator:
+                        type: string
+                        enum: [">", ">=", "<", "<=", "==", "!="]
+                        example: ">"
+                      value:
+                        type: number
+                        example: 30
+                logic:
+                  type: string
+                  enum: ["OR"]
+                  default: "OR"
+                  example: "OR"
+                emailNotification:
+                  type: boolean
+                  default: true
+                  example: true
+      responses:
+        "201":
+          description: Alert created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Alert created successfully."
+                  alert:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                      name:
+                        type: string
+                      device:
+                        type: object
+                        properties:
+                          _id:
+                            type: string
+                          name:
+                            type: string
+                      conditions:
+                        type: array
+                        items:
+                          type: object
+                      logic:
+                        type: string
+                      emailNotification:
+                        type: boolean
+                      isActive:
+                        type: boolean
+                      createdAt:
+                        type: string
+                        format: date-time
+        "400":
+          description: Alert name already exists or invalid condition format
+        "500":
+          description: Failed to create alert
+
+  /api/alerts/{alertId}:
+    delete:
+      tags:
+        - Alerts
+      summary: Xóa cảnh báo
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: alertId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "675ced69ad0ac3c9cb3cd7cj"
+      responses:
+        "200":
+          description: Alert deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Alert deleted successfully."
+        "404":
+          description: Alert not found
+        "500":
+          description: Failed to delete alert
+
+  # MQTT API
+  /api/sendcommand:
+    post:
+      tags:
+        - MQTT
+      summary: Gửi lệnh điều khiển qua MQTT
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - topic
+                - command
+              properties:
+                topic:
+                  type: string
+                  example: "device/control"
+                  description: MQTT topic để gửi lệnh
+                command:
+                  type: object
+                  additionalProperties: true
+                  example:
+                    deviceId: "675ced69ad0ac3c9cb3cd7cg"
+                    state: true
+                  description: Dữ liệu lệnh điều khiển
+      responses:
+        "200":
+          description: Command sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Command sent successfully"
+        "400":
+          description: Topic and command are required
+        "500":
+          description: Failed to send command
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "JWT access token. Sử dụng format: Bearer <token>"
