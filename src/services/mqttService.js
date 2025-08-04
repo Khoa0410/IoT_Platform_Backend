@@ -73,6 +73,11 @@ client.on("message", async (topic, message) => {
       Telemetry
     );
 
+    // Emit realtime data qua WebSocket
+    if (global.websocketService) {
+      await global.websocketService.emitDeviceData(_id, telemetry);
+    }
+
     // Kiểm tra điều kiện cảnh báo
     await checkAndTriggerAlerts(device._id, telemetry);
   } catch (error) {

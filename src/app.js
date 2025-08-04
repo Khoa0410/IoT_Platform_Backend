@@ -14,6 +14,11 @@ const alertRoutes = require("./routes/alertRoutes");
 const { baseUrl } = require("./config");
 const swaggerRoutes = require("./routes/swaggerRoutes");
 
+//socket.io setup
+const http = require("http");
+const { Server } = require("socket.io");
+const WebSocketService = require("./services/socketService");
+
 require("dotenv").config();
 
 const app = express();
@@ -22,6 +27,18 @@ const allowedOrigins = [
   baseUrl, // frontend dev
   "http://127.0.0.1:5500", // swagger UI local
 ];
+
+// socket service initialization
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true, // Cho phép gửi cookie
+  },
+});
+
+global.websocketService = new WebSocketService(io);
 
 // Middleware
 app.use(express.json());
@@ -73,6 +90,7 @@ app.use("/api", authenticate, alertRoutes);
 app.use("/api/mqtt", mqttRoutes);
 
 // Khởi chạy server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`WebSocket server is ready`);
 });
