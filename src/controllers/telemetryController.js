@@ -31,7 +31,7 @@ exports.getTelemetry = async (req, res) => {
 
     // Query telemetry từ time series collection
     let telemetryData = await Telemetry.find(query)
-      .sort({ timestamp: -1 }) // Sort mới nhất trước
+      .sort({ timestamp: 1 }) // Sort mới nhất trước
       .limit(parseInt(limit));
 
     // Xử lý field filtering

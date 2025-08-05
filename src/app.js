@@ -26,7 +26,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const allowedOrigins = [
   baseUrl, // frontend dev
-  "http://127.0.0.1:5500", // swagger UI local
+  "https://swagger-ui-tau.vercel.app", // swagger UI
 ];
 
 // socket service initialization
@@ -46,9 +46,11 @@ app.use(express.json());
 app.use(
   cors({
     origin: function (origin, callback) {
+      console.log(`CORS request from origin: ${origin}`); // Debug log
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.log(`CORS blocked origin: ${origin}`); // Debug log
         callback(new Error(`Not allowed by CORS: ${origin}`));
       }
     },
