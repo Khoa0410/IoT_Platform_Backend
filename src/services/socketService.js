@@ -115,20 +115,6 @@ class WebSocketService {
     }
   }
 
-  // Emit thông báo alert đến user
-  async emitAlert(userId, alertData) {
-    const userRoom = this.getUserRoom(userId);
-
-    const payload = {
-      type: "alert",
-      timestamp: new Date().toISOString(),
-      ...alertData,
-    };
-
-    this.io.to(userRoom).emit("alert_notification", payload);
-    console.log(`Alert emitted to ${userRoom}`);
-  }
-
   // Get số lượng connected users
   getConnectedUsersCount() {
     return this.io.sockets.sockets.size;

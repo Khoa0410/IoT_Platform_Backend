@@ -11,6 +11,7 @@ const chartRoutes = require("./routes/chartRoutes");
 const mqttRoutes = require("./routes/mqttRoutes");
 const buttonRoutes = require("./routes/buttonRoutes");
 const alertRoutes = require("./routes/alertRoutes");
+const telemetryRoutes = require("./routes/telemetryRoutes");
 const { baseUrl } = require("./config");
 const swaggerRoutes = require("./routes/swaggerRoutes");
 
@@ -85,6 +86,9 @@ app.use("/api", authenticate, buttonRoutes);
 
 // Route quản lý cảnh báo người dùng
 app.use("/api", authenticate, alertRoutes);
+
+// Route quản lý telemetry data
+app.use("/api", authenticate, telemetryRoutes);
 
 // Route quản lý MQTT
 app.use("/api/mqtt", mqttRoutes);
