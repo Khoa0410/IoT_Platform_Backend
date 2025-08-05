@@ -1,6 +1,7 @@
 const mqtt = require("mqtt");
 require("dotenv").config();
 const Device = require("../models/device");
+const Telemetry = require("../models/telemetry");
 const { checkAndTriggerAlerts } = require("../services/alertService");
 
 // Kết nối đến broker
@@ -27,7 +28,6 @@ client.on("message", async (topic, message) => {
   try {
     const payload = JSON.parse(message.toString());
     const { _id, telemetry, timestamp } = payload;
-    if (timestamp) console.log(`Timestamp: ${timestamp}`);
 
     // Kiểm tra xem thiết bị có tồn tại không
     const device = await Device.findById(_id);
@@ -42,6 +42,12 @@ client.on("message", async (topic, message) => {
       return;
     }
 
+    // Kiểm tra telemetry data có hợp lệ không
+    if (!telemetry || typeof telemetry !== "object") {
+      console.error(`Invalid telemetry data for device: ${_id}`);
+      return;
+    }
+
     // Xử lý timestamp
     let telemetryTimestamp;
     if (timestamp) {
@@ -51,26 +57,31 @@ client.on("message", async (topic, message) => {
         console.error(`Invalid timestamp for device: ${_id}`);
         return;
       } else {
-        telemetryTimestamp = timestamp;
+        telemetryTimestamp = date;
+        console.log(`Using provided timestamp: ${timestamp}`);
       }
     } else {
       telemetryTimestamp = new Date(); // Không có timestamp: dùng thời gian hiện tại
+      console.log(
+        `Using current timestamp: ${telemetryTimestamp.toISOString()}`
+      );
     }
-    console.log(`Telemetry timestamp: ${telemetryTimestamp}`);
 
-    // Taọ đối tượng telemetry
-    const Telemetry = {
+    console.log(`Telemetry data received:`, telemetry);
+
+    // Tạo telemetry record mới trong time series collection
+    // Giữ nguyên cấu trúc { value, unit } trong data
+    const telemetryRecord = new Telemetry({
+      deviceId: _id,
       timestamp: telemetryTimestamp,
-      data: telemetry,
-    };
+      data: telemetry, // Lưu trực tiếp format { field: { value, unit } }
+    });
 
-    // Thêm telemetry và sắp xếp theo timestamp
-    await Device.updateOne({ _id }, { $push: { telemetry: Telemetry } });
+    // Lưu vào time series collection
+    await telemetryRecord.save();
 
     console.log(
-      `Telemetry data added to device: ${_id}`,
-      `Telmetry:`,
-      Telemetry
+      `Telemetry data saved to time series collection for device: ${_id}`
     );
 
     // Emit realtime data qua WebSocket
@@ -78,10 +89,28 @@ client.on("message", async (topic, message) => {
       await global.websocketService.emitDeviceData(_id, telemetry);
     }
 
-    // Kiểm tra điều kiện cảnh báo
-    await checkAndTriggerAlerts(device._id, telemetry);
+    // Tạo processedData chỉ với values cho alert service
+    const processedData = {};
+    Object.keys(telemetry).forEach((key) => {
+      const fieldData = telemetry[key];
+
+      // Kiểm tra format: { value: number, unit: string }
+      if (
+        fieldData &&
+        typeof fieldData === "object" &&
+        fieldData.hasOwnProperty("value")
+      ) {
+        processedData[key] = fieldData.value;
+      } else {
+        // Fallback cho format cũ (chỉ có value)
+        processedData[key] = fieldData;
+      }
+    });
+
+    // Kiểm tra điều kiện cảnh báo (chỉ dùng processed data - values only)
+    await checkAndTriggerAlerts(device._id, processedData);
   } catch (error) {
-    console.error("Error processing message:", error);
+    console.error("Error processing MQTT message:", error);
   }
 });
 

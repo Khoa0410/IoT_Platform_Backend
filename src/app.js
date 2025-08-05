@@ -11,6 +11,7 @@ const chartRoutes = require("./routes/chartRoutes");
 const mqttRoutes = require("./routes/mqttRoutes");
 const buttonRoutes = require("./routes/buttonRoutes");
 const alertRoutes = require("./routes/alertRoutes");
+const telemetryRoutes = require("./routes/telemetryRoutes");
 const { baseUrl } = require("./config");
 const swaggerRoutes = require("./routes/swaggerRoutes");
 
@@ -25,7 +26,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const allowedOrigins = [
   baseUrl, // frontend dev
-  "http://127.0.0.1:5500", // swagger UI local
+  "https://swagger-ui-tau.vercel.app", // swagger UI
 ];
 
 // socket service initialization
@@ -45,9 +46,11 @@ app.use(express.json());
 app.use(
   cors({
     origin: function (origin, callback) {
+      console.log(`CORS request from origin: ${origin}`); // Debug log
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.log(`CORS blocked origin: ${origin}`); // Debug log
         callback(new Error(`Not allowed by CORS: ${origin}`));
       }
     },
@@ -85,6 +88,9 @@ app.use("/api", authenticate, buttonRoutes);
 
 // Route quản lý cảnh báo người dùng
 app.use("/api", authenticate, alertRoutes);
+
+// Route quản lý telemetry data
+app.use("/api", authenticate, telemetryRoutes);
 
 // Route quản lý MQTT
 app.use("/api/mqtt", mqttRoutes);

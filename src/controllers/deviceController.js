@@ -3,15 +3,16 @@ const Device = require("../models/device");
 const Chart = require("../models/chart");
 const Button = require("../models/button");
 const Alert = require("../models/alert");
+const Telemetry = require("../models/telemetry");
 
+// Tạo thiết bị mới
 exports.createDevice = async (req, res) => {
-  const { name, topic, telemetry } = req.body;
+  const { name, topic } = req.body;
   try {
     const newDevice = new Device({
       name,
       topic,
       user: req.user._id,
-      telemetry,
     });
     await newDevice.save();
     res.status(201).json(newDevice);
@@ -20,6 +21,7 @@ exports.createDevice = async (req, res) => {
   }
 };
 
+// Lấy danh sách thiết bị của người dùng
 exports.getDevices = async (req, res) => {
   try {
     const devices = await Device.find({ user: req.user._id });
@@ -31,6 +33,7 @@ exports.getDevices = async (req, res) => {
   }
 };
 
+// Lấy thông tin thiết bị theo ID
 exports.getDeviceById = async (req, res) => {
   const { id } = req.params; // Lấy ID thiết bị từ URL
 
@@ -54,6 +57,7 @@ exports.getDeviceById = async (req, res) => {
   }
 };
 
+// Cập nhật thông tin thiết bị (name, topic)
 exports.updateDevice = async (req, res) => {
   const { id } = req.params;
   const { name, topic } = req.body;
@@ -66,21 +70,6 @@ exports.updateDevice = async (req, res) => {
         .json({ message: "Device not found or unauthorized" });
     }
 
-    // Kiểm tra tên trùng lặp trong cùng user
-    if (name && name !== device.name) {
-      const nameExists = await Device.findOne({
-        name,
-        user: req.user._id,
-        _id: { $ne: id },
-      });
-
-      if (nameExists) {
-        return res.status(400).json({
-          message: "Device name already exists. Please choose another name.",
-        });
-      }
-    }
-
     if (name) device.name = name;
     if (topic) device.topic = topic;
 
@@ -88,7 +77,13 @@ exports.updateDevice = async (req, res) => {
 
     res.status(200).json({ message: "Device updated successfully", device });
   } catch (error) {
-    console.error("Error updating device:", error);
+    // Handle MongoDB duplicate key error (Trùng tên thiết bị)
+    if (error.code === 11000) {
+      return res.status(400).json({
+        message: "Device name already exists. Please choose another name.",
+      });
+    }
+
     res.status(500).json({ message: "Error updating device", error });
   }
 };
@@ -113,6 +108,7 @@ exports.deleteDevices = async (req, res) => {
     }
 
     // Xóa các tài nguyên liên quan: charts, buttons, alerts
+    await Telemetry.deleteMany({ device: id }, { session });
     await Chart.deleteMany({ device: id }, { session });
     await Button.deleteMany({ device: id }, { session });
     await Alert.deleteMany({ device: id }, { session });
@@ -127,89 +123,5 @@ exports.deleteDevices = async (req, res) => {
     await session.abortTransaction();
     session.endSession();
     res.status(500).json({ message: "Error deleting device", error });
-  }
-};
-
-exports.getTelemetry = async (req, res) => {
-  const { id } = req.params; // Lấy ID thiết bị từ URL
-  const { field, startDate, endDate } = req.query; // Các tham số lọc từ query
-
-  try {
-    // Tìm thiết bị thuộc về người dùng đang đăng nhập
-    const device = await Device.findOne({
-      _id: id,
-      user: req.user._id,
-    });
-
-    if (!device) {
-      return res
-        .status(404)
-        .json({ message: "Device not found or not authorized" });
-    }
-
-    // Lấy danh sách telemetry
-    let telemetry = device.telemetry;
-
-    // Lọc theo khoảng thời gian
-    if (startDate || endDate) {
-      telemetry = telemetry.filter((entry) => {
-        const timestamp = new Date(entry.timestamp);
-        if (startDate && timestamp < new Date(startDate)) return false;
-        if (endDate && timestamp > new Date(endDate)) return false;
-        return true;
-      });
-    }
-
-    // Lọc theo trường dữ liệu
-    if (field) {
-      telemetry = telemetry
-        .map((entry) => ({
-          timestamp: entry.timestamp,
-          value: entry.data[field], // Chỉ giữ giá trị của trường được chỉ định
-        }))
-        .filter((entry) => entry.value !== undefined); // Loại bỏ các giá trị không tồn tại
-    }
-
-    res.status(200).json(telemetry);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching telemetry data", error });
-  }
-};
-
-exports.getTelemetryField = async (req, res) => {
-  const { id } = req.params; // Lấy ID thiết bị từ URL
-
-  try {
-    // Tìm thiết bị thuộc về người dùng đang đăng nhập
-    const device = await Device.findOne({
-      _id: id,
-      user: req.user._id,
-    })
-      .select("telemetry")
-      .slice("telemetry", -1);
-
-    if (!device) {
-      return res
-        .status(404)
-        .json({ message: "Device not found or not authorized" });
-    }
-
-    if (!device.telemetry || device.telemetry.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No telemetry data found for this device" });
-    }
-
-    // Trích xuất các trường từ telemetry.data của bản ghi mới nhất
-    const telemetry = device.telemetry[0]; // Lấy bản ghi đầu tiên (mới nhất)
-    const fields =
-      telemetry.data && typeof telemetry.data === "object"
-        ? Object.keys(telemetry.data)
-        : [];
-
-    res.json({ fields });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
   }
 };
